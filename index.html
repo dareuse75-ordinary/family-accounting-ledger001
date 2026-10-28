@@ -88,7 +88,7 @@ tailwind.config = {
         <p id="dashSavingsRate" class="text-base sm:text-xl font-extrabold text-blue-600 mt-1">0.0%</p>
       </div>
       <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm col-span-2 md:col-span-1">
-        <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Budget Variance</p>
+        <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Actual Budget Variance</p>
         <p id="dashVariance" class="text-base sm:text-xl font-extrabold text-purple-600 mt-1">₱0.00</p>
       </div>
     </div>
@@ -264,7 +264,6 @@ tailwind.config = {
 <script>
 let API_URL = 'https://script.google.com/macros/s/AKfycbz6H_n3GAmHz3tpbEoHdHbzs6Ak2DtgNmT3upyt4eB8Oqo1QLbuV7X4M8NpfHnQ3O5DJQ/exec';
 
-// Default fallback categories in case backend budget sheet is empty
 let categories = {
   "Housing": 0,
   "Groceries": 0,
@@ -345,15 +344,17 @@ function updateMonthSelectors() {
   let dashSelect = document.getElementById('dashboardMonthSelect');
   let momA = document.getElementById('momMonthA');
   let momB = document.getElementById('momMonthB');
+  let currentMonth = new Date().toISOString().substring(0, 7);
 
   if (dashSelect) {
     let currentVal = dashSelect.value;
     dashSelect.innerHTML = `<option value="All">All Months (Aggregate)</option>`;
     months.forEach(m => { dashSelect.innerHTML += `<option value="${m}">${m}</option>`; });
+    
     if (currentVal && (currentVal === 'All' || months.includes(currentVal))) {
       dashSelect.value = currentVal;
     } else {
-      dashSelect.value = 'All';
+      dashSelect.value = months.includes(currentMonth) ? currentMonth : (months.length > 0 ? months[0] : 'All');
     }
   }
 
@@ -405,7 +406,12 @@ function renderDashboard() {
   let netSavings = totalIncome - totalExpenses;
   let savingsRate = totalIncome > 0 ? (netSavings / totalIncome) * 100 : 0;
   
-  let totalBudget = Object.values(categories).reduce((a, b) => a + Number(b), 0);
+  // Calculate total budget for the selected period (multiplied by count if 'All', or single month budget if filtered)
+  let baseMonthlyBudget = Object.values(categories).reduce((a, b) => a + Number(b), 0);
+  let activeMonthsCount = selectedMonth === 'All' ? Math.max(getAvailableMonths().length, 1) : 1;
+  let totalBudget = baseMonthlyBudget * activeMonthsCount;
+  
+  // Actual budget variance for the displayed scope (Total Budget minus Total Expenses)
   let totalVariance = totalBudget - totalExpenses;
 
   document.getElementById('dashTotalIncome').innerText = `₱${totalIncome.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
@@ -425,14 +431,15 @@ function renderDashboard() {
   visualContainer.innerHTML = '';
 
   for (let [cat, budgeted] of Object.entries(categories)) {
+    let monthlyLimit = Number(budgeted) * activeMonthsCount;
     let spent = catSpentTotals[cat] || 0;
-    let variance = Number(budgeted) - spent;
-    let pct = Number(budgeted) > 0 ? (spent / Number(budgeted)) * 100 : 0;
+    let variance = monthlyLimit - spent;
+    let pct = monthlyLimit > 0 ? (spent / monthlyLimit) * 100 : 0;
     
     tbody.innerHTML += `
       <tr class="hover:bg-slate-50">
         <td class="p-3 font-medium text-slate-800">${cat}</td>
-        <td class="p-3 text-right text-slate-600">₱${Number(budgeted).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+        <td class="p-3 text-right text-slate-600">₱${monthlyLimit.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
         <td class="p-3 text-right text-slate-800 font-semibold">₱${spent.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
         <td class="p-3 text-right ${variance >= 0 ? 'text-emerald-600' : 'text-rose-600'} font-medium">₱${variance.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
         <td class="p-3 text-right">${pct.toFixed(1)}%</td>
@@ -443,7 +450,7 @@ function renderDashboard() {
       <div>
         <div class="flex justify-between text-[11px] font-semibold text-slate-700 mb-1">
           <span>${cat}</span>
-          <span>₱${spent.toLocaleString()} / ₱${Number(budgeted).toLocaleString()}</span>
+          <span>₱${spent.toLocaleString()} / ₱${monthlyLimit.toLocaleString()}</span>
         </div>
         <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
           <div class="bg-emerald-500 h-full rounded-full" style="width: ${Math.min(pct, 100)}%"></div>
@@ -623,7 +630,7 @@ function handleFormSubmit(event) {
     month: dateVal.substring(0, 7),
     desc: document.getElementById('txDesc').value,
     type: document.getElementById('txType').value,
-    category: document.getElementById('txCategory').value,
+    category: document.getElementById('txCategory' ).value,
     member: role.isAdmin ? document.getElementById('txMember').value : role.name,
     amount: parseFloat(document.getElementById('txAmount').value) || 0
   };
