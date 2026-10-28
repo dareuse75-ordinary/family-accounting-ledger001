@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Accounting Ledger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen p-6">
+    <div class="max-w-4xl mx-auto">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-slate-900">Family Accounting Ledger</h1>
+            <p class="text-slate-500">Track and manage your family's finances in real time.</p>
+        </header>
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Summary Dashboard</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="p-4 bg-emerald-50 border border-emerald-100 rounded-lg">
+                    <p class="text-sm text-emerald-600 font-medium">Total Income</p>
+                    <p class="text-2xl font-bold text-emerald-700" id="total-income">₱0.00</p>
+                </div>
+                <div class="p-4 bg-rose-50 border border-rose-100 rounded-lg">
+                    <p class="text-sm text-rose-600 font-medium">Total Expenses</p>
+                    <p class="text-2xl font-bold text-rose-700" id="total-expenses">₱0.00</p>
+                </div>
+                <div class="p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                    <p class="text-sm text-blue-600 font-medium">Net Balance</p>
+                    <p class="text-2xl font-bold text-blue-700" id="net-balance">₱0.00</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h2 class="text-xl font-semibold mb-4">Recent Transactions</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-slate-400 text-sm">
+                            <th class="py-3 px-4">Date</th>
+                            <th class="py-3 px-4">Description</th>
+                            <th class="py-3 px-4">Category</th>
+                            <th class="py-3 px-4 text-right">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transaction-list">
+                        <tr class="border-b border-slate-100">
+                            <td class="py-3 px-4 text-slate-500" colspan="4">Loading transactions...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
