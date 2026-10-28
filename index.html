@@ -262,10 +262,20 @@ tailwind.config = {
 </div>
 
 <script>
-// Pointing to your correct Family Accounting Book 02 Web App URL
 let API_URL = 'https://script.google.com/macros/s/AKfycbz6H_n3GAmHz3tpbEoHdHbzs6Ak2DtgNmT3upyt4eB8Oqo1QLbuV7X4M8NpfHnQ3O5DJQ/exec';
 
-let categories = {};
+// Default fallback categories in case backend budget sheet is empty
+let categories = {
+  "Housing": 0,
+  "Groceries": 0,
+  "Utilities": 0,
+  "Transportation": 0,
+  "Healthcare": 0,
+  "Education": 0,
+  "Entertainment": 0,
+  "Dining Out": 0,
+  "Miscellaneous": 0
+};
 let transactions = [];
 
 async function init() {
@@ -287,7 +297,9 @@ async function fetchBackendData() {
     let data = await response.json();
     if (data) {
       if (Array.isArray(data.transactions)) transactions = data.transactions;
-      if (data.budgets) categories = data.budgets;
+      if (data.budgets && Object.keys(data.budgets).length > 0) {
+        categories = data.budgets;
+      }
     }
   } catch (e) {
     console.error('Backend fetch error:', e);
