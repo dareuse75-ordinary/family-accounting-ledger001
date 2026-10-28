@@ -125,13 +125,13 @@ tailwind.config = {
     </div>
   </div>
 
-  <!-- MoM COMPARISON VIEW (SUMMARY ONLY WITH MONTH DROPDOWNS) -->
+  <!-- MoM COMPARISON VIEW -->
   <div id="view-mom" class="space-y-5 hidden">
     <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
       <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
         <i data-lucide="bar-chart-2" class="w-5 h-5 text-emerald-600"></i> Month-on-Month Summary Comparison
       </h2>
-      <p class="text-xs text-slate-500">Select two months to compare total performance summary metrics side-by-side.</p>
+      <p class="text-xs text-slate-500">Select two months (or All) to compare total performance summary metrics side-by-side.</p>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
         <div>
@@ -335,25 +335,38 @@ function updateMonthSelectors() {
 
   if (dashSelect) {
     let currentVal = dashSelect.value;
-    dashSelect.innerHTML = '';
+    dashSelect.innerHTML = `<option value="All">All Months (Aggregate)</option>`;
     months.forEach(m => { dashSelect.innerHTML += `<option value="${m}">${m}</option>`; });
-    if (currentVal && months.includes(currentVal)) dashSelect.value = currentVal;
-    else if (months.length > 0) dashSelect.value = months[0];
+    if (currentVal && (currentVal === 'All' || months.includes(currentVal))) {
+      dashSelect.value = currentVal;
+    } else {
+      dashSelect.value = 'All';
+    }
   }
 
   if (momA && momB) {
     let valA = momA.value;
     let valB = momB.value;
-    momA.innerHTML = ''; momB.innerHTML = '';
+    momA.innerHTML = `<option value="All">All Months (Aggregate)</option>`;
+    momB.innerHTML = `<option value="All">All Months (Aggregate)</option>`;
     months.forEach(m => {
       momA.innerHTML += `<option value="${m}">${m}</option>`;
       momB.innerHTML += `<option value="${m}">${m}</option>`;
     });
-    if (months.length >= 2) {
-      if (!valA || !months.includes(valA)) momA.value = months[1];
-      if (!valB || !months.includes(valB)) momB.value = months[0];
-    } else if (months.length === 1) {
-      momA.value = months[0]; momB.value = months[0];
+    if (valA && (valA === 'All' || months.includes(valA))) {
+      momA.value = valA;
+    } else if (months.length > 1) {
+      momA.value = months[1];
+    } else {
+      momA.value = 'All';
+    }
+
+    if (valB && (valB === 'All' || months.includes(valB))) {
+      momB.value = valB;
+    } else if (months.length > 0) {
+      momB.value = months[0];
+    } else {
+      momB.value = 'All';
     }
   }
 }
@@ -369,8 +382,10 @@ function renderAll() {
 
 function renderDashboard() {
   let dashSelect = document.getElementById('dashboardMonthSelect');
-  let selectedMonth = dashSelect ? dashSelect.value : new Date().toISOString().substring(0, 7);
-  let monthTransactions = transactions.filter(t => t.month === selectedMonth);
+  let selectedMonth = dashSelect ? dashSelect.value : 'All';
+  let monthTransactions = selectedMonth === 'All' 
+    ? transactions 
+    : transactions.filter(t => t.month === selectedMonth);
 
   let totalIncome = monthTransactions.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount || 0), 0);
   let totalExpenses = monthTransactions.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount || 0), 0);
@@ -433,11 +448,11 @@ function renderMoM() {
   let monthA = selectA.value;
   let monthB = selectB.value;
 
-  document.getElementById('momHeaderA').innerText = monthA || 'Month A';
-  document.getElementById('momHeaderB').innerText = monthB || 'Month B';
+  document.getElementById('momHeaderA').innerText = monthA === 'All' ? 'All (Aggregate)' : (monthA || 'Month A');
+  document.getElementById('momHeaderB').innerText = monthB === 'All' ? 'All (Aggregate)' : (monthB || 'Month B');
 
-  let txA = transactions.filter(t => t.month === monthA);
-  let txB = transactions.filter(t => t.month === monthB);
+  let txA = monthA === 'All' ? transactions : transactions.filter(t => t.month === monthA);
+  let txB = monthB === 'All' ? transactions : transactions.filter(t => t.month === monthB);
 
   let incA = txA.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount || 0), 0);
   let incB = txB.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount || 0), 0);
