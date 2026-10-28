@@ -60,7 +60,6 @@ tailwind.config = {
 
   <!-- DASHBOARD VIEW -->
   <div id="view-dashboard" class="space-y-5">
-    <!-- PER MONTH FILTER BAR -->
     <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
       <div class="flex items-center gap-2">
         <i data-lucide="calendar" class="w-4 h-4 text-emerald-600"></i>
@@ -94,12 +93,10 @@ tailwind.config = {
       </div>
     </div>
 
-    <!-- MAIN TABLES & VISUAL PRESENTATIONS -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-      <!-- Category Spending Breakdown -->
       <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
         <div class="p-4 border-b border-slate-100 flex justify-between items-center">
-          <h2 class="font-bold text-slate-800 text-sm">Category Spending Breakdown (Budget Planner Tab Sync)</h2>
+          <h2 class="font-bold text-slate-800 text-sm">Category Spending Breakdown</h2>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse text-xs">
@@ -117,7 +114,6 @@ tailwind.config = {
         </div>
       </div>
 
-      <!-- Visual Progress Cards -->
       <div class="space-y-5">
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
           <h2 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
@@ -129,13 +125,13 @@ tailwind.config = {
     </div>
   </div>
 
-  <!-- MoM COMPARISON VIEW -->
+  <!-- MoM COMPARISON VIEW (SUMMARY ONLY WITH MONTH DROPDOWNS) -->
   <div id="view-mom" class="space-y-5 hidden">
     <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
       <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
-        <i data-lucide="bar-chart-2" class="w-5 h-5 text-emerald-600"></i> Month-on-Month (MoM) Performance Comparison
+        <i data-lucide="bar-chart-2" class="w-5 h-5 text-emerald-600"></i> Month-on-Month Summary Comparison
       </h2>
-      <p class="text-xs text-slate-500">Analyze financial growth and spending variances between any two months.</p>
+      <p class="text-xs text-slate-500">Select two months to compare total performance summary metrics side-by-side.</p>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
         <div>
@@ -152,7 +148,7 @@ tailwind.config = {
         <table class="w-full text-left border-collapse text-xs">
           <thead>
             <tr class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
-              <th class="p-3">Financial Metric</th>
+              <th class="p-3">Summary Metric</th>
               <th id="momHeaderA" class="p-3 text-right">Month A</th>
               <th id="momHeaderB" class="p-3 text-right">Month B</th>
               <th class="p-3 text-right">MoM Variance / Growth</th>
@@ -167,7 +163,7 @@ tailwind.config = {
   <!-- TRANSACTIONS VIEW -->
   <div id="view-transactions" class="space-y-4 hidden">
     <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between gap-3 items-center">
-      <h2 class="font-bold text-slate-800 text-sm">Transactions Ledger (Backend Tab: Transactions)</h2>
+      <h2 class="font-bold text-slate-800 text-sm">Transactions Ledger</h2>
       <button type="button" onclick="openAddModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm">
         <i data-lucide="plus" class="w-4 h-4"></i> Add Entry
       </button>
@@ -197,7 +193,7 @@ tailwind.config = {
     <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
       <div class="flex justify-between items-center">
         <div>
-          <h2 class="font-bold text-slate-800 text-sm">Manage Budget Planner (Backend Tab Sync)</h2>
+          <h2 class="font-bold text-slate-800 text-sm">Manage Budget Planner</h2>
           <p class="text-xs text-slate-500">Admin privileges required to update category budget limits.</p>
         </div>
         <span id="budgetAccessBadge" class="px-2.5 py-1 rounded-full text-xs font-bold"></span>
@@ -266,7 +262,6 @@ tailwind.config = {
 </div>
 
 <script>
-// Pointing to your deployed Version 7 Apps Script Web App URL
 let API_URL = 'https://script.google.com/macros/s/AKfycbxKgQxIkJP9IN3tGfjecmQI2eGydt5e0azJ0bXY32HhEw36v-I7UpCJhjwWNNZQiMKI2g/exec';
 
 let categories = {};
@@ -276,7 +271,6 @@ async function init() {
   try {
     let dateInput = document.getElementById('txDate');
     if (dateInput) dateInput.valueAsDate = new Date();
-    
     await fetchBackendData();
     updateCategoryOptions();
     renderAll();
@@ -367,6 +361,7 @@ function updateMonthSelectors() {
 function renderAll() {
   updateMonthSelectors();
   renderDashboard();
+  renderMoM();
   renderTransactionsTable();
   renderBudgetPlanner();
   if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -444,182 +439,4 @@ function renderMoM() {
   let txA = transactions.filter(t => t.month === monthA);
   let txB = transactions.filter(t => t.month === monthB);
 
-  let incA = txA.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount || 0), 0);
-  let incB = txB.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount || 0), 0);
-  let expA = txA.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount || 0), 0);
-  let expB = txB.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount || 0), 0);
-
-  let savA = incA - expA;
-  let savB = incB - expB;
-  let rateA = incA > 0 ? (savA / incA) * 100 : 0;
-  let rateB = incB > 0 ? (savB / incB) * 100 : 0;
-
-  let metrics = [
-    { label: 'Total Inflows (Income)', a: incA, b: incB, isCurrency: true, inverseGood: false },
-    { label: 'Total Outflows (Expenses)', a: expA, b: expB, isCurrency: true, inverseGood: true },
-    { label: 'Net Savings', a: savA, b: savB, isCurrency: true, inverseGood: false },
-    { label: 'Savings Rate', a: rateA, b: rateB, isCurrency: false, inverseGood: false }
-  ];
-
-  let tbody = document.getElementById('momTableBody');
-  if (!tbody) return;
-  tbody.innerHTML = '';
-
-  metrics.forEach(m => {
-    let diff = m.b - m.a;
-    let pctChange = m.a !== 0 ? (diff / Math.abs(m.a)) * 100 : 0;
-    let isBetter = m.inverseGood ? diff <= 0 : diff >= 0;
-
-    let formattedA = m.isCurrency ? `₱${m.a.toLocaleString('en-US', {minimumFractionDigits: 2})}` : `${m.a.toFixed(1)}%`;
-    let formattedB = m.isCurrency ? `₱${m.b.toLocaleString('en-US', {minimumFractionDigits: 2})}` : `${m.b.toFixed(1)}%`;
-    let formattedDiff = m.isCurrency ? `₱${Math.abs(diff).toLocaleString('en-US', {minimumFractionDigits: 2})}` : `${Math.abs(diff).toFixed(1)}%`;
-
-    tbody.innerHTML += `
-      <tr class="hover:bg-slate-50">
-        <td class="p-3 font-medium text-slate-800">${m.label}</td>
-        <td class="p-3 text-right text-slate-600">${formattedA}</td>
-        <td class="p-3 text-right text-slate-800 font-semibold">${formattedB}</td>
-        <td class="p-3 text-right ${isBetter ? 'text-emerald-600' : 'text-rose-600'} font-bold">
-          ${diff >= 0 ? '+' : '-'}${formattedDiff} (${pctChange.toFixed(1)}%)
-        </td>
-      </tr>
-    `;
-  });
-}
-
-function renderTransactionsTable() {
-  let tbody = document.getElementById('transactionsTableBody');
-  if (!tbody) return;
-  tbody.innerHTML = '';
-  if (transactions.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400 italic">No transactions found in backend.</td></tr>`;
-    return;
-  }
-  transactions.forEach(t => {
-    tbody.innerHTML += `
-      <tr class="hover:bg-slate-50">
-        <td class="p-3 text-slate-600">${t.date}</td>
-        <td class="p-3 text-slate-500 font-semibold">${t.month}</td>
-        <td class="p-3 font-medium text-slate-900">${t.desc}</td>
-        <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${t.type === 'Income' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${t.type}</span></td>
-        <td class="p-3 text-slate-600">${t.category}</td>
-        <td class="p-3 text-slate-600">${t.member}</td>
-        <td class="p-3 text-right font-bold ${t.type === 'Income' ? 'text-emerald-600' : 'text-slate-800'}">₱${Number(t.amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-      </tr>
-    `;
-  });
-}
-
-function renderBudgetPlanner() {
-  let role = getCurrentUserRole();
-  let container = document.getElementById('budgetInputsContainer');
-  let badge = document.getElementById('budgetAccessBadge');
-  let actionContainer = document.getElementById('budgetActionContainer');
-  if (!container) return;
-  container.innerHTML = '';
-  
-  if (role.isAdmin) {
-    if (badge) {
-      badge.className = 'px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700';
-      badge.innerText = 'Admin Privileges Active (Editable)';
-    }
-    if (actionContainer) actionContainer.style.display = 'block';
-
-    for (let [cat, limit] of Object.entries(categories)) {
-      container.innerHTML += `
-        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-          <label class="block font-semibold text-slate-700 mb-1">${cat}</label>
-          <input type="number" step="0.01" id="budget-input-${cat}" value="${limit}" class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-medium">
-        </div>
-      `;
-    }
-  } else {
-    if (badge) {
-      badge.className = 'px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800';
-      badge.innerText = 'Contributor View (Read-Only)';
-    }
-    if (actionContainer) actionContainer.style.display = 'none';
-
-    for (let [cat, limit] of Object.entries(categories)) {
-      container.innerHTML += `
-        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-          <label class="block font-semibold text-slate-700 mb-1">${cat}</label>
-          <p class="p-2 bg-white border border-slate-200 rounded-lg font-bold text-slate-800">₱${Number(limit).toLocaleString()}</p>
-        </div>
-      `;
-    }
-  }
-}
-
-function saveBudgets() {
-  let role = getCurrentUserRole();
-  if (!role.isAdmin) { alert('Admin privileges required.'); return; }
-  
-  let newBudgets = {};
-  for (let cat of Object.keys(categories)) {
-    let inputEl = document.getElementById(`budget-input-${cat}`);
-    if (inputEl) newBudgets[cat] = parseFloat(inputEl.value) || 0;
-  }
-
-  fetch(API_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: "updateBudgets", budgets: newBudgets })
-  }).then(() => {
-    categories = newBudgets;
-    renderAll();
-    alert('Category budgets successfully synced to backend Budget Planner tab!');
-  });
-}
-
-function openAddModal() { document.getElementById('addModal').classList.remove('hidden'); }
-function closeAddModal() { document.getElementById('addModal').classList.add('hidden'); }
-
-function updateCategoryOptions() {
-  let typeEl = document.getElementById('txType');
-  let catSelect = document.getElementById('txCategory');
-  if (!typeEl || !catSelect) return;
-
-  let type = typeEl.value;
-  catSelect.innerHTML = '';
-  if (type === 'Expense') {
-    Object.keys(categories).forEach(cat => { catSelect.innerHTML += `<option value="${cat}">${cat}</option>`; });
-  } else {
-    ['Salary', 'Freelance', 'Investment', 'Other Income'].forEach(src => { catSelect.innerHTML += `<option value="${src}">${src}</option>`; });
-  }
-}
-
-function handleFormSubmit(event) {
-  event.preventDefault();
-  let role = getCurrentUserRole();
-  let dateVal = document.getElementById('txDate').value;
-  let newTx = {
-    id: Date.now(),
-    date: dateVal,
-    month: dateVal.substring(0, 7),
-    desc: document.getElementById('txDesc').value,
-    type: document.getElementById('txType').value,
-    category: document.getElementById('txCategory').value,
-    member: role.isAdmin ? document.getElementById('txMember').value : role.name,
-    amount: parseFloat(document.getElementById('txAmount').value) || 0
-  };
-
-  fetch(API_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(newTx)
-  }).then(() => {
-    transactions.unshift(newTx);
-    closeAddModal();
-    document.getElementById('transactionForm').reset();
-    renderAll();
-    alert('Entry successfully recorded and sent to the backend Transactions tab!');
-  });
-}
-
-window.onload = init;
-</script>
-</body>
-</html>
+  let incA = tx
