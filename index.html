@@ -60,13 +60,12 @@ tailwind.config = {
 
   <!-- DASHBOARD VIEW -->
   <div id="view-dashboard" class="space-y-5">
-    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
+    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
       <div class="flex items-center gap-2">
         <i data-lucide="calendar" class="w-4 h-4 text-emerald-600"></i>
-        <span class="text-xs font-bold text-slate-700">Per Month Filter:</span>
-        <select id="dashboardMonthSelect" onchange="renderDashboard()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-brand-500"></select>
+        <span class="text-xs font-bold text-slate-700">Displaying Current Active Month: <span id="currentMonthDisplay" class="text-emerald-600 font-extrabold"></span></span>
       </div>
-      <p class="text-[11px] text-slate-400">Dashboard metrics adapt dynamically to the selected month.</p>
+      <p class="text-[11px] text-slate-400">Dashboard automatically tracks current month metrics.</p>
     </div>
 
     <!-- METRICS GRID -->
@@ -131,7 +130,7 @@ tailwind.config = {
       <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
         <i data-lucide="bar-chart-2" class="w-5 h-5 text-emerald-600"></i> Month-on-Month Summary Comparison
       </h2>
-      <p class="text-xs text-slate-500">Select two months (or All) to compare total performance summary metrics side-by-side.</p>
+      <p class="text-xs text-slate-500">Select two months to compare total performance summary metrics side-by-side.</p>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
         <div>
@@ -341,47 +340,29 @@ function getAvailableMonths() {
 
 function updateMonthSelectors() {
   let months = getAvailableMonths();
-  let dashSelect = document.getElementById('dashboardMonthSelect');
+  let currentMonth = new Date().toISOString().substring(0, 7);
+  let activeMonth = months.includes(currentMonth) ? currentMonth : (months.length > 0 ? months[0] : currentMonth);
+
+  let displayEl = document.getElementById('currentMonthDisplay');
+  if (displayEl) displayEl.innerText = activeMonth;
+
   let momA = document.getElementById('momMonthA');
   let momB = document.getElementById('momMonthB');
-  let currentMonth = new Date().toISOString().substring(0, 7);
-
-  if (dashSelect) {
-    let currentVal = dashSelect.value;
-    dashSelect.innerHTML = `<option value="All">All Months (Aggregate)</option>`;
-    months.forEach(m => { dashSelect.innerHTML += `<option value="${m}">${m}</option>`; });
-    
-    if (currentVal && (currentVal === 'All' || months.includes(currentVal))) {
-      dashSelect.value = currentVal;
-    } else {
-      dashSelect.value = months.includes(currentMonth) ? currentMonth : (months.length > 0 ? months[0] : 'All');
-    }
-  }
 
   if (momA && momB) {
     let valA = momA.value;
     let valB = momB.value;
-    momA.innerHTML = `<option value="All">All Months (Aggregate)</option>`;
-    momB.innerHTML = `<option value="All">All Months (Aggregate)</option>`;
+    momA.innerHTML = '';
+    momB.innerHTML = '';
     months.forEach(m => {
       momA.innerHTML += `<option value="${m}">${m}</option>`;
       momB.innerHTML += `<option value="${m}">${m}</option>`;
     });
-    if (valA && (valA === 'All' || months.includes(valA))) {
-      momA.value = valA;
-    } else if (months.length > 1) {
-      momA.value = months[1];
-    } else {
-      momA.value = 'All';
-    }
-
-    if (valB && (valB === 'All' || months.includes(valB))) {
-      momB.value = valB;
-    } else if (months.length > 0) {
-      momB.value = months[0];
-    } else {
-      momB.value = 'All';
-    }
+    if (valA && months.includes(valA)) momA.value = valA;
+    else if (months.length > 1) momA.value = months[1];
+    
+    if (valB && months.includes(valB)) momB.value = valB;
+    else if (months.length > 0) momB.value = months[0];
   }
 }
 
@@ -395,23 +376,18 @@ function renderAll() {
 }
 
 function renderDashboard() {
-  let dashSelect = document.getElementById('dashboardMonthSelect');
-  let selectedMonth = dashSelect ? dashSelect.value : 'All';
-  let monthTransactions = selectedMonth === 'All' 
-    ? transactions 
-    : transactions.filter(t => t.month === selectedMonth);
+  let months = getAvailableMonths();
+  let currentMonth = new Date().toISOString().substring(0, 7);
+  let activeMonth = months.includes(currentMonth) ? currentMonth : (months.length > 0 ? months[0] : currentMonth);
+
+  let monthTransactions = transactions.filter(t => t.month === activeMonth);
 
   let totalIncome = monthTransactions.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount || 0), 0);
   let totalExpenses = monthTransactions.filter(t => t.type === 'Expense').reduce((s, t) => s + Number(t.amount || 0), 0);
   let netSavings = totalIncome - totalExpenses;
   let savingsRate = totalIncome > 0 ? (netSavings / totalIncome) * 100 : 0;
   
-  // Calculate total budget for the selected period (multiplied by count if 'All', or single month budget if filtered)
-  let baseMonthlyBudget = Object.values(categories).reduce((a, b) => a + Number(b), 0);
-  let activeMonthsCount = selectedMonth === 'All' ? Math.max(getAvailableMonths().length, 1) : 1;
-  let totalBudget = baseMonthlyBudget * activeMonthsCount;
-  
-  // Actual budget variance for the displayed scope (Total Budget minus Total Expenses)
+  let totalBudget = Object.values(categories).reduce((a, b) => a + Number(b), 0);
   let totalVariance = totalBudget - totalExpenses;
 
   document.getElementById('dashTotalIncome').innerText = `₱${totalIncome.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
@@ -431,7 +407,7 @@ function renderDashboard() {
   visualContainer.innerHTML = '';
 
   for (let [cat, budgeted] of Object.entries(categories)) {
-    let monthlyLimit = Number(budgeted) * activeMonthsCount;
+    let monthlyLimit = Number(budgeted);
     let spent = catSpentTotals[cat] || 0;
     let variance = monthlyLimit - spent;
     let pct = monthlyLimit > 0 ? (spent / monthlyLimit) * 100 : 0;
@@ -468,11 +444,11 @@ function renderMoM() {
   let monthA = selectA.value;
   let monthB = selectB.value;
 
-  document.getElementById('momHeaderA').innerText = monthA === 'All' ? 'All (Aggregate)' : (monthA || 'Month A');
-  document.getElementById('momHeaderB').innerText = monthB === 'All' ? 'All (Aggregate)' : (monthB || 'Month B');
+  document.getElementById('momHeaderA').innerText = monthA || 'Month A';
+  document.getElementById('momHeaderB').innerText = monthB || 'Month B';
 
-  let txA = monthA === 'All' ? transactions : transactions.filter(t => t.month === monthA);
-  let txB = monthB === 'All' ? transactions : transactions.filter(t => t.month === monthB);
+  let txA = transactions.filter(t => t.month === monthA);
+  let txB = transactions.filter(t => t.month === monthB);
 
   let incA = txA.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount || 0), 0);
   let incB = txB.filter(t => t.type === 'Income').reduce((s, t) => s + Number(t.amount || 0), 0);
@@ -630,7 +606,7 @@ function handleFormSubmit(event) {
     month: dateVal.substring(0, 7),
     desc: document.getElementById('txDesc').value,
     type: document.getElementById('txType').value,
-    category: document.getElementById('txCategory' ).value,
+    category: document.getElementById('txCategory').value,
     member: role.isAdmin ? document.getElementById('txMember').value : role.name,
     amount: parseFloat(document.getElementById('txAmount').value) || 0
   };
